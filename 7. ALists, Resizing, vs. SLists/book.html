@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 7 讲：AList、扩容与对比 SLList（ALists, Resizing, vs. SLists）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-7-alist-sllistalists-resizing-vs-slists">CS61B 第 7 讲：AList、扩容与对比 SLList（ALists, Resizing, vs. SLists）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p06 7_ALists, Resizing, vs. SLists</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap25.html">Hug61B · 2.5 The AList</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；文中示意图为官方讲义原图，演示过程图截取自视频。</p>
+</blockquote>
+<p>上一讲我们得到了漂亮的 <code>DLList</code>——增删取都很快、没有丑陋的特殊情况。既然它这么好，为什么还要折腾数组？本讲回答这个问题：构建一个用数组存储数据的 <code>AList</code>，并在这个过程中揭示链表 <code>get</code> 的软肋、朴素扩容的性能灾难，以及"几何倍增"这一化腐朽为神奇的关键技巧。</p>
+<hr />
+<h2 id="get">一、链表的性能谜题：get 为什么慢</h2>
+<p><code>DLList</code> 的 <code>getLast</code> 是常数时间，但 <code>get(int i)</code> 很慢。原因：链表只有头尾两个引用，要取第 <code>i</code> 项，必须从一端<strong>沿链接一步步走到</strong>目标位置。</p>
+<p>设想一个 100 万项的列表，有人要第 500,000 项——你不得不扫过半个列表。最坏情况（取正中间项）下，<code>get</code> 耗时<strong>与列表长度成正比</strong>（线性时间）；而 <code>getLast</code> 无论列表多大都是常数时间。（严谨的"大 O / 大 Θ"记法本课稍后正式定义，现在先用直观理解。）</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_01_36.png" alt="链表 get 需要逐项遍历" loading="lazy">
+  <p class="video-caption">📷 链表 get 需要逐项遍历<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=96" target="_blank" rel="noopener">回到原视频 (00:01:36)</a></p>
+</div>
+
+<p><strong>为什么数组能更快？</strong> 在现代计算机上，访问数组的第 <code>i</code> 项是<strong>常数时间</strong>——无论数组多大、要第几项，用方括号 <code>items[i]</code> 就能立即拿到（原理见讲义里的 Quora 链接，61C 会细讲）。既然没有"链接"要遍历，<code>get</code> 自然快。</p>
+<p>于是我们换个思路，用数组实现列表——<code>AList</code>。</p>
+<hr />
+<h2 id="alist">二、朴素数组列表：第一个 AList</h2>
+<p>我们要实现的 <code>AList</code> 支持与 <code>DLList</code> 完全相同的接口（<code>addLast</code>、<code>getLast</code>、<code>get</code>、<code>size</code>、<code>removeLast</code>），只是底层换成数组：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">AList</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">items</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">AList</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">100</span><span class="o">]</span><span class="p">;</span><span class="w">   </span><span class="c1">// 先定个容量上限 100</span>
+<span class="w">        </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_05_13.png" alt="AList 的 items 数组与 size" loading="lazy">
+  <p class="video-caption">📷 AList 的 items 数组与 size<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=313" target="_blank" rel="noopener">回到原视频 (00:05:13)</a></p>
+</div>
+
+<p>写方法前，先"手算一个小例子"抽象出<strong>不变量</strong>（invariants）：</p>
+<ol>
+<li>下一个要插入（<code>addLast</code>）的位置<strong>总是</strong> <code>size</code>；</li>
+<li>列表中的元素个数<strong>总是</strong> <code>size</code>；</li>
+<li>最后一个元素的位置<strong>总是</strong> <code>size - 1</code>。</li>
+</ol>
+<p>有了不变量，三个方法一行到位：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addLast</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">items</span><span class="o">[</span><span class="n">size</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w">  </span><span class="nf">getLast</span><span class="p">()</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="o">[</span><span class="n">size</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w">  </span><span class="nf">size</span><span class="p">()</span><span class="w">         </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">size</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w">  </span><span class="nf">get</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">     </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_08_56.png" alt="AList 代码" loading="lazy">
+  <p class="video-caption">📷 AList 代码<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=536" target="_blank" rel="noopener">回到原视频 (00:08:56)</a></p>
+</div>
+
+<p>不变量就是"安全设备"：写代码时随时可查，甚至能成为数学上证明程序正确性的工具。</p>
+<h3 id="removelast">removeLast 与"洞穴寓言"</h3>
+<p>实现 <code>removeLast</code> 前，Josh 讲了一个哲学类比——<strong>柏拉图的洞穴寓言</strong>：用户（洞穴里的人）看到的只是墙上抽象的"影子"（列表有 5、3、1、7、2、2 这些项）；我们（实现者，僧侣）在更高一层操纵<strong>具体现实</strong>（<code>size</code>、<code>items</code>、<code>items[i]</code> 这些内存盒子）。只要让"影子表演"符合用户预期，具体怎么改都行。</p>
+<p>用户调用 <code>removeLast</code>，期望 -1 消失。落到具体现实上，该改哪些盒子？</p>
+<ul>
+<li><code>size</code>：从 6 减到 5（必须——不变量要求"元素个数 == size"、"最后一项在 size-1"）；</li>
+<li><code>items</code>：不必换新数组；</li>
+<li><code>items[size]</code>（那个 -1）：<strong>不必清零</strong>——只要 <code>size</code> 减了，那个位置就被"逻辑删除"了（下次 <code>addLast</code> 会覆盖它）。</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">removeLast</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getLast</span><span class="p">();</span>
+<span class="w">    </span><span class="n">size</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">        </span><span class="c1">// 只需把 size 减一，旧值留着无妨</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_00.png" alt="removeLast 与洞穴寓言" loading="lazy">
+  <p class="video-caption">📷 removeLast 与洞穴寓言<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=660" target="_blank" rel="noopener">回到原视频 (00:11:00)</a></p>
+</div>
+
+<p>用洞穴寓言的比喻：有人用手指射中了那只鸟，我们<strong>不必真的摧毁它</strong>，只要把它从火光前放下（<code>size -= 1</code>）就行。</p>
+<hr />
+<h2 id="_1">三、朴素扩容：当数组满了</h2>
+<p><code>AList</code> 目前上限 100。当 <code>size == 100</code> 时再 <code>addLast</code>，就会抛 <code>ArrayIndexOutOfBoundsException</code>。</p>
+<p>但 Java 数组<strong>不能真正改变大小</strong>。于是我们玩个小戏法：<strong>新建一个更大的数组，把旧数据复制过去，再让 <code>items</code> 指向新数组</strong>（旧数组由垃圾回收器销毁）：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addLast</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">size</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="o">]</span><span class="p">;</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">arraycopy</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span>
+<span class="w">        </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">items</span><span class="o">[</span><span class="n">size</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="w">    </span><span class="n">size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>这个过程俗称"扩容（resizing）"，但严格说是个误称——数组没变，我们只是造了个<strong>更大的新数组</strong>。为让代码更整洁，可以抽出私有的 <code>resize(int capacity)</code> 方法，把"新建数组 + 复制 + 改指向"封装起来。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_50.png" alt="朴素扩容：新建更大数组并复制" loading="lazy">
+  <p class="video-caption">📷 朴素扩容：新建更大数组并复制<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=1070" target="_blank" rel="noopener">回到原视频 (00:17:50)</a></p>
+</div>
+
+<hr />
+<h2 id="_2">四、分析朴素扩容：一场性能灾难</h2>
+<p>跑一个实验：<code>SLList</code> 和 <code>AList</code> 各 <code>addLast</code> 100,000 次。</p>
+<ul>
+<li><code>SLList</code>：快到几乎测不出时间；</li>
+<li>朴素 <code>AList</code>：<strong>要好几秒</strong>。</li>
+</ul>
+<p>为什么？做个小谜题：从满的 size=100 数组开始，调用 <code>addLast</code> 两次，一共要创建并填充多少个盒子？——每次扩容都要新建数组并复制全部旧数据：第一次新建 101、复制 100；第二次新建 102、复制 101；再加上插入的 1 个，合计 <strong>203</strong> 个盒子。</p>
+<p>推广：从 100 一路 <code>addLast</code> 到 1000，要创建 <code>101 + 102 + … + 1000 ≈ 500,000</code> 个盒子（用 <code>1+2+…+n = n(n+1)/2</code> 估算，约 <code>1000²/2</code>）。</p>
+<p>把"总耗时 vs 操作次数"画成图：</p>
+<ul>
+<li><code>SLList</code> 是一条<strong>直线</strong>——每个 <code>add</code> 耗时恒定（常数时间；常数积分得直线）；</li>
+<li>朴素 <code>AList</code> 是一条<strong>抛物线</strong>——每次操作耗时随规模线性增长（直线积分得抛物线）。</li>
+</ul>
+<p><img alt="SLList 直线 vs 朴素 AList 抛物线" src="images/insert_experiment.png" /></p>
+<p>插入 10 万项，抛物线意味着约 <code>100000² / 100000 = 100000</code> 倍的差距——<strong>绝对不能接受</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_24_28.png" alt="速度对比实验" loading="lazy">
+  <p class="video-caption">📷 速度对比实验<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=1468" target="_blank" rel="noopener">回到原视频 (00:24:28)</a></p>
+</div>
+
+<hr />
+<h2 id="_3">五、几何扩容：化抛物线为直线</h2>
+<p>问题出在 <code>resize(size + 1)</code>——每次只<strong>加</strong>一点点。解法出奇简单：<strong>乘以一个因子</strong>，而不是加一个常量。</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">insertBack</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">resize</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">RFACTOR</span><span class="p">);</span><span class="w">   </span><span class="c1">// 乘法（几何）而非加法</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">items</span><span class="o">[</span><span class="n">size</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="w">    </span><span class="n">size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>课上 Josh 现场演示了关键区别：把"每次 +10"改成"每次 ×2"后，即使把测试规模从 10 万提到 100 万、再到 1000 万，<code>AList</code> 都飞快。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_30_52.png" alt="几何扩容：乘以 RFACTOR" loading="lazy">
+  <p class="video-caption">📷 几何扩容：乘以 RFACTOR<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=1852" target="_blank" rel="noopener">回到原视频 (00:30:52)</a></p>
+</div>
+
+<p>为什么"加 10"不行、非"×2"不可？加 10 只是<strong>把问题隐藏</strong>了——规模一大依旧原形毕露（加法本质还是线性增长）；只有乘法才能让扩容次数随规模<strong>对数</strong>增长，从而把摊销成本摊薄到常数级别。（完整分析留到期末章节。）</p>
+<blockquote>
+<p><strong>编者说明</strong>：Python 内置的 <code>list</code>、Java 的 <code>ArrayList</code> 等真实实现，内部用的就是这种"几何倍增"策略。这正是本讲最核心、也最实用的一个知识点。</p>
+</blockquote>
+<hr />
+<h2 id="_4">六、内存性能：使用率与缩容</h2>
+<p>几何扩容解决了时间，但带来空间问题：假如插入 10 亿项后删掉 9.9 亿项，我们只用了 1% 的盒子，其余 99% 全空着——纯浪费。</p>
+<p>于是引入<strong>使用率（usage ratio，也叫负载因子 load factor）</strong>：</p>
+<div class="highlight"><pre><span></span><code>使用率 R = size / items.length
+</code></pre></div>
+
+<p>当 <code>R</code> 跌破某个阈值（典型实现取 <strong>0.25</strong>），就把数组<strong>缩容</strong>（通常减半）。下图的使用率只有 0.04，远低于 0.25，应当缩容：</p>
+<p><img alt="使用率（load factor）示意" src="images/usage_ratio.png" /></p>
+<p>这背后是贯穿本课程的大主题：<strong>时间与空间的权衡</strong>——用空间换时间（缓存 size、几何扩容预留空间），或用时间换空间（缩容回收闲置盒子）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_33_39.png" alt="使用率与缩容" loading="lazy">
+  <p class="video-caption">📷 使用率与缩容<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=2019" target="_blank" rel="noopener">回到原视频 (00:33:39)</a></p>
+</div>
+
+<hr />
+<h2 id="alist_1">七、泛型 AList 与"滞留"陷阱</h2>
+<p>最后让 <code>AList</code> 泛型化，能装任意类型（<code>&lt;Item&gt;</code>）：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">AList</span><span class="o">&lt;</span><span class="n">Item</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">Item</span><span class="o">[]</span><span class="w"> </span><span class="n">items</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>但这里有一个 Java 的语法坑：<strong>不能直接 <code>new Item[8]</code></strong>（泛型数组不被允许）。必须用一次丑陋的强制类型转换：</p>
+<div class="highlight"><pre><span></span><code><span class="n">Item</span><span class="o">[]</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Item</span><span class="o">[]</span><span class="p">)</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Object</span><span class="o">[</span><span class="mi">8</span><span class="o">]</span><span class="p">;</span>
+</code></pre></div>
+
+<p>这会带来一条编译警告，只能忍受——这是泛型实现方式的副作用。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_35_41.png" alt="泛型 AList 的强制类型转换" loading="lazy">
+  <p class="video-caption">📷 泛型 AList 的强制类型转换<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=7&t=2141" target="_blank" rel="noopener">回到原视频 (00:35:41)</a></p>
+</div>
+
+<p><strong>另一个微妙改动：清除"滞留（loitering）"</strong>。回到洞穴寓言——整数版的 <code>removeLast</code> 可以不清零旧值（反正会被覆盖）；但泛型版存的是<strong>对象引用</strong>，如果不把 <code>items[size-1]</code> 置为 <code>null</code>，那个对象就会一直被引用、垃圾回收器永远不会回收它。比如删掉一张 1MB 的图片后仍留着它的引用，内存就被白白占用。</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="n">Item</span><span class="w"> </span><span class="nf">removeLast</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Item</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getLast</span><span class="p">();</span>
+<span class="w">    </span><span class="n">items</span><span class="o">[</span><span class="n">size</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w">   </span><span class="c1">// 清除引用，避免 loitering</span>
+<span class="w">    </span><span class="n">size</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>这个 bug 很隐蔽，只在"存大量对象、又频繁删除"时才明显，但会造成严重的内存浪费。<strong>记住：Java 只在最后一个引用丢失时才回收对象；所以，不要滞留（Don't loiter）。</strong></p>
+<hr />
+<h2 id="_5">小结</h2>
+<p><code>AList</code> 用数组换来了常数时间的 <code>get</code>，代价是 <code>addLast</code> 需要扩容。朴素扩容是性能灾难（抛物线）；换成<strong>几何倍增</strong>后，时间摊薄到常数级（直线），再配合使用率阈值缩容回收空间。由此也完成了链表与数组两条正交思路的对照：<code>SLList</code>/<code>DLList</code> 两端操作快、中间慢；<code>AList</code> 随机访问快、尾部插入需摊薄扩容成本。</p>
+<hr />
+<h2 id="_6">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义</strong>（The AList）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap25.html">https://joshhug.gitbooks.io/hug61b/content/chap2/chap25.html</a></li>
+<li><strong>为什么数组访问是常数时间</strong>（Quora）：<a href="https://www.quora.com/Why-does-accessing-an-array-element-take-constant-time">https://www.quora.com/Why-does-accessing-an-array-element-take-constant-time</a></li>
+<li><strong>AList DIY 起始代码</strong>：<a href="https://github.com/Berkeley-CS61B/lectureCode/tree/master/lists4/DIY">https://github.com/Berkeley-CS61B/lectureCode/tree/master/lists4/DIY</a></li>
+<li><strong>朴素实现参考</strong>：<a href="https://github.com/Berkeley-CS61B/lectureCode/tree/master/lists4/naive">https://github.com/Berkeley-CS61B/lectureCode/tree/master/lists4/naive</a></li>
+<li><strong>Project 1A（LinkedListDeque）</strong>：<a href="http://sp19.datastructur.es/materials/proj/proj1a/proj1a">http://sp19.datastructur.es/materials/proj/proj1a/proj1a</a></li>
+<li><strong>Discussion 3 / Lab 2</strong>：见讲义 What's next 一节</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中示意图来自官方讲义原图，演示过程截图来自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>

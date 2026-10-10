@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 1 讲：课程介绍与 Hello World（Intro, Hello World Java）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-1-hello-worldintro-hello-world-java">CS61B 第 1 讲：课程介绍与 Hello World（Intro, Hello World Java）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p0 1_Intro, Hello World Java</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap1/chap11.html">Hug61B · 1.1 Essentials</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；示意图为官方讲义原图，演示截图取自原视频。</p>
+</blockquote>
+<p>这是 CS61B 的第一讲。前半部分是课程介绍（为什么学这门课、课程怎么组织），后半部分是 Java 入门：Hello World、编译运行、变量与循环、静态类型，以及"函数"在 Java 里的形态。</p>
+<hr />
+<h2 id="_1">一、课程介绍：数据结构与算法为何重要</h2>
+<p>这门课假定你已经会编程，目标不是教你 Java 语法，而是让你<strong>写得更快、更省空间、也更容易维护</strong>。具体来说，课程覆盖设计、构建、测试和调试大型程序，并顺带学习 git、IntelliJ、JUnit 等真实工具。</p>
+<p>为什么要学数据结构与算法？Josh 举了几个例子：</p>
+<ul>
+<li><strong>Google 自动补全</strong>：你在搜索框里打字，它能瞬间给出建议，背后依赖的是一种叫 <strong>trie（字典树）</strong> 的数据结构——本课后面会讲到。</li>
+<li><strong>AlphaGo / 围棋、国际象棋 AI</strong>：击败人类的算法，正是本课程为机器学习打下的基础。</li>
+<li><strong>GPT-3</strong>：能根据一句话生成代码，这背后同样是算法与数据结构的支撑。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_54.png" alt="Google 自动补全与背后的数据结构" loading="lazy">
+  <p class="video-caption">📷 Google 自动补全与背后的数据结构<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=474" target="_blank" rel="noopener">回到原视频 (00:07:54)</a></p>
+</div>
+
+<p>一句话：<strong>这门课是求职面试（哈希表、二叉搜索树、堆……）与后续机器学习/系统课程的地基。</strong></p>
+<hr />
+<h2 id="hello-world-java">二、Hello World：第一个 Java 程序</h2>
+<p>第一个 Java 程序长这样：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">HelloWorld</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Hello world!"</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>对从 Python 过来的人来说，这显得无比啰嗦，但每个词都有它的理由。几个关键语法特征：</p>
+<ul>
+<li>程序由一个<strong>类声明</strong>组成，用 <code>public class</code> 声明——<strong>Java 里所有代码都活在类里</strong>；</li>
+<li>实际运行的代码在一个叫 <code>main</code> 的方法里，声明为 <code>public static void main(String[] args)</code>；</li>
+<li>用花括号 <code>{ }</code> 表示一段代码的开始与结束；</li>
+<li>每条语句必须以<strong>分号</strong>结尾。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_43_25.png" alt="Hello World 程序（Java 与 Python 对比）" loading="lazy">
+  <p class="video-caption">📷 Hello World 程序（Java 与 Python 对比）<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2605" target="_blank" rel="noopener">回到原视频 (00:43:25)</a></p>
+</div>
+
+<h3 id="java">关于 Java 的几个观察</h3>
+<ol>
+<li><strong>所有代码必须在类里</strong>——这是为大型软件工程做的设计取舍；</li>
+<li>用<strong>花括号</strong>界定代码段；</li>
+<li>所有语句以<strong>分号</strong>结束；</li>
+<li>要运行代码，得有一个 <code>main</code> 方法（现在还不必深究它是什么，第二讲会讲）。</li>
+</ol>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_44_22.png" alt="关于 Java 的几个观察" loading="lazy">
+  <p class="video-caption">📷 关于 Java 的几个观察<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2662" target="_blank" rel="noopener">回到原视频 (00:44:22)</a></p>
+</div>
+
+<hr />
+<h2 id="javac-java">三、编译与运行：javac 与 java</h2>
+<p>运行一个 Java 程序要走两个程序：先<strong>编译器</strong> <code>javac</code>，再<strong>解释器</strong> <code>java</code>。</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>javac<span class="w"> </span>HelloWorld.java<span class="w">   </span><span class="c1"># 编译，生成 HelloWorld.class</span>
+$<span class="w"> </span>java<span class="w"> </span>HelloWorld<span class="w">         </span><span class="c1"># 解释执行</span>
+Hello<span class="w"> </span>World!
+</code></pre></div>
+
+<ul>
+<li>编译时写 <code>.java</code>，解释时不写 <code>.class</code>（"就是这样"）；</li>
+<li><code>javac</code> 之后看起来"什么都没发生"，但目录里多了一个 <code>HelloWorld.class</code>——那是 Java 字节码，只有 Java 解释器才看得懂。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_42_27.png" alt="编译与运行流程" loading="lazy">
+  <p class="video-caption">📷 编译与运行流程<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2547" target="_blank" rel="noopener">回到原视频 (00:42:27)</a></p>
+</div>
+
+<hr />
+<h2 id="hellonumbers">四、变量与循环：HelloNumbers</h2>
+<p>下面这个程序打印 0 到 9：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">HelloNumbers</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" "</span><span class="p">);</span>
+<span class="w">            </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>几个值得注意的点：</p>
+<ul>
+<li>变量 <code>x</code> 必须<strong>先声明、并给定类型</strong>，才能使用；</li>
+<li>循环体包在花括号里，判断条件包在圆括号里；</li>
+<li><code>System.out.print</code>（不带 <code>ln</code>）不换行；<code>x + " "</code> 里的 <code>+</code> 是<strong>字符串拼接</strong>，用来给数字之间加空格。</li>
+</ul>
+<p>如果你在 Java 里直接写 <code>x = 0</code> 而不先声明 <code>int x</code>，会得到一个神秘的报错 "cannot find symbol"——因为 <strong>Java 不允许你说"某物等于某物"，它必须先知道这个"某物"存在、且是什么类型</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_45_44.png" alt="变量与循环：HelloNumbers" loading="lazy">
+  <p class="video-caption">📷 变量与循环：HelloNumbers<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2744" target="_blank" rel="noopener">回到原视频 (00:45:44)</a></p>
+</div>
+
+<hr />
+<h2 id="static-typing">五、静态类型（Static Typing）</h2>
+<p>Java 最重要的特性之一：<strong>所有变量和表达式都有一个静态类型</strong>，变量只能存该类型的值，而且类型<strong>永远不能变</strong>。</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"horse"</span><span class="p">;</span><span class="w">   </span><span class="c1">// 编译错误：String 不能转换为 int</span>
+</code></pre></div>
+
+<p>编译器在程序<strong>运行之前</strong>就拒绝这段代码。这意味着：</p>
+<ol>
+<li><strong>更容易调试</strong>——类型不兼容在编译期就被揪出来；</li>
+<li><strong>用户永远不会遇到类型错误</strong>——比如 Android App 只发布编译后的 <code>.class</code> 文件，类型错误早已被编译器拦下；</li>
+<li><strong>代码更好读懂</strong>——每个变量、参数、函数都有声明类型，一眼就知道它是什么。</li>
+</ol>
+<p>对比 Python 这类<strong>动态类型</strong>语言：类型错误要等到<strong>运行时</strong>才暴露。Josh 把 Python 比作"徒手攀岩"——快，但危险；Java 则是"系着绳索、戴着头盔"。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_46_42.png" alt="静态类型：x = "horse" 编译报错" loading="lazy">
+  <p class="video-caption">📷 静态类型：x = "horse" 编译报错<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2802" target="_blank" rel="noopener">回到原视频 (00:46:42)</a></p>
+</div>
+
+<blockquote>
+<p><strong>思考题</strong>：<code>System.out.println(5 + "10")</code> 打印的是 <code>510</code> 还是 <code>15</code>？——<code>+</code> 遇到字符串就是拼接，所以是 <code>510</code>；而 <code>5 + 10</code> 才是整数加法 <code>15</code>。</p>
+</blockquote>
+<hr />
+<h2 id="functions-methods">六、函数与方法（Functions &amp; Methods）</h2>
+<p>Python 里函数可以在任何地方声明：</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">larger</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">y</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">larger</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+</code></pre></div>
+
+<p>Java 里，<strong>所有代码都在类里</strong>，所以"函数"必须属于某个类——类里的函数通常叫<strong>方法（method）</strong>。等价写法：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LargerDemo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">larger</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">larger</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>新语法是 <code>public static</code>（粗略对应 Python 的 <code>def</code>）。和变量一样，<strong>每个参数都要声明类型</strong>，<strong>函数本身也要声明返回类型</strong>（<code>int</code>）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_49_11.png" alt="函数与方法：Python vs Java" loading="lazy">
+  <p class="video-caption">📷 函数与方法：Python vs Java<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=1&t=2951" target="_blank" rel="noopener">回到原视频 (00:49:11)</a></p>
+</div>
+
+<p>这些啰嗦的语法看着像"拖慢速度"，但它们是现在还不懂的<strong>安全装备</strong>：写小程序时显得多余，写大程序时你会感激它们。</p>
+<hr />
+<h2 id="_2">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义</strong>（1.1 Essentials）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap1/chap11.html">https://joshhug.gitbooks.io/hug61b/content/chap1/chap11.html</a></li>
+<li><strong>Java 参考（免费电子书）</strong>：Paul Hilfinger《A Java Reference》</li>
+<li><strong>Head First Java</strong>：Kathy Sierra &amp; Bert Bates</li>
+<li><strong>各语言的 Hello World</strong>：<a href="https://www.rosettacode.org/wiki/Hello_world/Text">https://www.rosettacode.org/wiki/Hello_world/Text</a></li>
+<li><strong>Java 字节码</strong>：<a href="https://en.wikipedia.org/wiki/Java_bytecode">https://en.wikipedia.org/wiki/Java_bytecode</a></li>
+<li><strong>代码风格指南</strong>（课程官方）：<a href="https://sp19.datastructur.es/materials/guides/style-guide.html">https://sp19.datastructur.es/materials/guides/style-guide.html</a></li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中示意图来自官方讲义原图，演示截图来自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>

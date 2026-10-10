@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 2 讲：定义与使用类（Defining and Using Classes）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-2-defining-and-using-classes">CS61B 第 2 讲：定义与使用类（Defining and Using Classes）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p1 2_Defining and Using Classes</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap1/chap12.html">Hug61B · 1.2 Objects</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；示意图为官方讲义原图，演示截图取自原视频。</p>
+</blockquote>
+<p>上一讲我们写了第一个 Java 程序。这一讲回答"类到底怎么用"：静态方法、实例变量、构造函数、对象数组、<code>this</code>，以及贯穿全课程的核心理念——<strong>用类与辅助方法管理复杂度</strong>。</p>
+<hr />
+<h2 id="vs">一、静态方法 vs 非静态方法</h2>
+<p>Java 里所有代码都在类里。看这个 <code>Dog</code> 类：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Dog</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">makeNoise</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Bark!"</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>直接 <code>java Dog</code> 会报错：<code>Main method not found</code>——因为我们只定义了 Dog <strong>能做什么</strong>（叫），却还没让它运行。要运行它，可以给它加 <code>main</code>，或者另建一个"客户端"类：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DogLauncher</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Dog</span><span class="p">.</span><span class="na">makeNoise</span><span class="p">();</span><span class="w">   </span><span class="c1">// 用类名调用静态方法</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>调用另一个类的类，叫做那个类的<strong>客户端（client）</strong>。两种做法（加 <code>main</code> vs 建客户端类）各有优劣，实践多了自然体会。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_28.png" alt="Dog 类与静态方法" loading="lazy">
+  <p class="video-caption">📷 Dog 类与静态方法<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=388" target="_blank" rel="noopener">回到原视频 (00:06:28)</a></p>
+</div>
+
+<h3 id="_1">实例变量与对象实例化</h3>
+<p>不是所有狗都一样：有的爱尖叫，有的叫声洪亮。与其为每种狗建一个类（<code>TinyDog</code>、<code>MalamuteDog</code>），更自然的做法是<strong>实例化</strong> <code>Dog</code>，让行为取决于具体那只狗的状态：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Dog</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">weightInPounds</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">makeNoise</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">              </span><span class="c1">// 注意：没有 static</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">weightInPounds</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"yipyipyip!"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">weightInPounds</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"bark. bark."</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"woof!"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code><span class="n">Dog</span><span class="w"> </span><span class="n">d</span><span class="p">;</span>
+<span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">();</span>
+<span class="n">d</span><span class="p">.</span><span class="na">weightInPounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<span class="n">d</span><span class="p">.</span><span class="na">makeNoise</span><span class="p">();</span><span class="w">      </span><span class="c1">// 输出 "bark. bark."</span>
+</code></pre></div>
+
+<p>关键术语：</p>
+<ul>
+<li><strong>对象（Object）</strong>：任何类的实例；</li>
+<li><strong>实例变量（instance variable / non-static variable）</strong>：属于对象自己的变量，必须在类内声明（不像 Python 可以运行时加）；</li>
+<li><strong>实例方法（instance method）</strong>：没加 <code>static</code> 的方法，属于某个具体对象；</li>
+<li>调用实例方法要先 <code>new</code> 出一个对象，再 <code>d.makeNoise()</code>（而不是 <code>Dog.makeNoise()</code>）；</li>
+<li>类的变量和方法统称<strong>成员（members）</strong>，用<strong>点号</strong>访问。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_17.png" alt="实例变量与实例化" loading="lazy">
+  <p class="video-caption">📷 实例变量与实例化<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=737" target="_blank" rel="noopener">回到原视频 (00:12:17)</a></p>
+</div>
+
+<hr />
+<h2 id="constructor">二、构造函数（Constructor）</h2>
+<p>逐个手动给实例变量赋值很啰嗦，我们用<strong>构造函数</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Dog</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">weightInPounds</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Dog</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">          </span><span class="c1">// 构造函数：与类同名，无返回类型</span>
+<span class="w">        </span><span class="n">weightInPounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">makeNoise</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code><span class="n">Dog</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span><span class="w">   </span><span class="c1">// 用 new + 单个 int 参数，自动调用 Dog(int w)</span>
+<span class="n">d</span><span class="p">.</span><span class="na">makeNoise</span><span class="p">();</span>
+</code></pre></div>
+
+<p>构造函数 <code>public Dog(int w)</code> 会在 <code>new Dog(20)</code> 时被调用，相当于 Python 的 <code>__init__</code>。它的作用是<strong>告诉你如何构造一个对象的实例</strong>——通常要把实例变量都设置好。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_15_18.png" alt="构造函数" loading="lazy">
+  <p class="video-caption">📷 构造函数<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=918" target="_blank" rel="noopener">回到原视频 (00:15:18)</a></p>
+</div>
+
+<hr />
+<h2 id="_2">三、对象数组</h2>
+<p>数组也能装对象，<code>new</code> 在这里有<strong>两种用法</strong>：一次创建"能装两个 Dog"的数组，再两次创建实际的 Dog：</p>
+<div class="highlight"><pre><span></span><code><span class="n">Dog</span><span class="o">[]</span><span class="w"> </span><span class="n">dogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">;</span><span class="w">      </span><span class="c1">// 创建数组（两个空位，默认 null）</span>
+<span class="n">dogs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">(</span><span class="mi">8</span><span class="p">);</span><span class="w">         </span><span class="c1">// 创建实际对象</span>
+<span class="n">dogs</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span>
+<span class="n">dogs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">.</span><span class="na">makeNoise</span><span class="p">();</span><span class="w">          </span><span class="c1">// yip，因为体重 8</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_41.png" alt="对象数组" loading="lazy">
+  <p class="video-caption">📷 对象数组<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=1241" target="_blank" rel="noopener">回到原视频 (00:20:41)</a></p>
+</div>
+
+<hr />
+<h2 id="vs-this">四、类方法 vs 实例方法（this）</h2>
+<p>Java 有两种方法：</p>
+<ul>
+<li><strong>类方法（静态方法）</strong>：由类本身调用，如 <code>Math.sqrt(100)</code>；</li>
+<li><strong>实例方法（非静态方法）</strong>：由具体实例调用，如 <code>d.makeNoise()</code>。</li>
+</ul>
+<p>比较两只狗，可以写成静态方法：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Dog</span><span class="w"> </span><span class="nf">maxDog</span><span class="p">(</span><span class="n">Dog</span><span class="w"> </span><span class="n">d1</span><span class="p">,</span><span class="w"> </span><span class="n">Dog</span><span class="w"> </span><span class="n">d2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">d1</span><span class="p">.</span><span class="na">weightInPounds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">d2</span><span class="p">.</span><span class="na">weightInPounds</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">d1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">d2</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">// 调用：Dog.maxDog(d, d2)</span>
+</code></pre></div>
+
+<p>也可以写成实例方法，用 <code>this</code> 指代"当前对象"：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="n">Dog</span><span class="w"> </span><span class="nf">maxDog</span><span class="p">(</span><span class="n">Dog</span><span class="w"> </span><span class="n">d2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">weightInPounds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">d2</span><span class="p">.</span><span class="na">weightInPounds</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">d2</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">// 调用：d.maxDog(d2)</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_22_11.png" alt="类方法 vs 实例方法" loading="lazy">
+  <p class="video-caption">📷 类方法 vs 实例方法<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=1331" target="_blank" rel="noopener">回到原视频 (00:22:11)</a></p>
+</div>
+
+<hr />
+<h2 id="static-variables">五、静态变量（Static Variables）</h2>
+<p>有时某个属性属于<strong>类本身</strong>而非实例——比如所有狗的学名都是 <code>Canis familiaris</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Dog</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">weightInPounds</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">binomen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Canis familiaris"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>访问静态变量要用<strong>类名</strong>（<code>Dog.binomen</code>），不要用实例名（<code>d.binomen</code>）——虽然后者 Java 技术上允许，但那是坏风格、易混淆（Josh 认为这是 Java 设计者的一个失误）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_26_52.png" alt="静态变量" loading="lazy">
+  <p class="video-caption">📷 静态变量<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=1612" target="_blank" rel="noopener">回到原视频 (00:26:52)</a></p>
+</div>
+
+<hr />
+<h2 id="java">六、为什么 Java 强迫你用类：管理复杂度</h2>
+<p>为什么要 <code>static</code>、为什么要类、为什么不能把代码写在类外面？答案是：<strong>它剥夺了你作为程序员的一部分选择，从而减少复杂度</strong>。</p>
+<ul>
+<li>强迫代码属于类 → 你不能写"散装"代码；</li>
+<li><code>static</code> 方法被限制 → 它<strong>不能访问实例变量</strong>，于是你少了一件要担心的事；</li>
+<li>选择越少 → 要思考的东西越少 → 代码越好懂。</li>
+</ul>
+<p><strong>管理复杂度</strong>是 61B 设计的根本原则。<code>static</code> 的本质就是"限制可能发生的事情"，让代码更易理解。</p>
+<hr />
+<h2 id="helper-methods">七、辅助方法（Helper Methods）</h2>
+<p>面对复杂问题时，最重要的工具是<strong>辅助方法</strong>：一个只做一件简单小事的方法。它让你把大问题拆成小问题，逐个击破。</p>
+<p>Josh 用一个例子演示：写一个方法 <code>largerThanFourNeighbors</code>，给定一个 Dog 数组，返回所有"比左右各两个邻居都大"的狗。</p>
+<p><strong>不拆分的写法</strong>：一堆嵌套循环 + <code>if</code> 判断边界 + <code>j==0</code> 跳过自己，代码又长又容易出 bug（Josh 现场就写出了一堆特殊情况，越写越乱）。</p>
+<p><strong>用辅助方法</strong>：把逻辑拆成几个有名字的小函数，主函数读起来像自然语言：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Dog</span><span class="o">[]</span><span class="w"> </span><span class="nf">largerThanFourNeighbors</span><span class="p">(</span><span class="n">Dog</span><span class="o">[]</span><span class="w"> </span><span class="n">dogs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Dog</span><span class="o">[]</span><span class="w"> </span><span class="n">returnDogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="o">[</span><span class="n">dogs</span><span class="p">.</span><span class="na">length</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">dogs</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isBiggestOfFour</span><span class="p">(</span><span class="n">dogs</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="c1">// 辅助方法：这只狗是四邻最大吗？</span>
+<span class="w">            </span><span class="n">returnDogs</span><span class="o">[</span><span class="n">cnt</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dogs</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span>
+<span class="w">            </span><span class="n">cnt</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">arrayWithNoNulls</span><span class="p">(</span><span class="n">returnDogs</span><span class="p">,</span><span class="w"> </span><span class="n">cnt</span><span class="p">);</span><span class="w">   </span><span class="c1">// 辅助方法：去掉多余的空位</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><code>isBiggestOfFour</code> 里再配合 <code>isValidIndex</code> 判断索引是否越界、跳过 <code>j==0</code> 避免"和自己比较"。每一步都清晰、可读、可单独测试。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_45_00.png" alt="用辅助方法重构" loading="lazy">
+  <p class="video-caption">📷 用辅助方法重构<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=2&t=2700" target="_blank" rel="noopener">回到原视频 (00:45:00)</a></p>
+</div>
+
+<p><strong>辅助方法的三重好处</strong>：</p>
+<ol>
+<li><strong>更具叙述性</strong>——代码读起来像在描述意图；</li>
+<li><strong>写的时候更不容易出错</strong>——每个小函数只负责一件事；</li>
+<li><strong>出错时更容易调试</strong>——bug 被局限在某个小函数里，一眼就能定位。</li>
+</ol>
+<hr />
+<h2 id="public-static-void-mainstring-args">八、public static void main(String[] args) 拆解</h2>
+<p>终于可以拆解那个一直出现的 <code>main</code> 声明了：</p>
+<ul>
+<li><code>public</code>：可见性（目前所有方法都以此开头）；</li>
+<li><code>static</code>：静态方法，不关联任何具体实例；</li>
+<li><code>void</code>：没有返回值；</li>
+<li><code>main</code>：方法名；</li>
+<li><code>String[] args</code>：传给 main 的参数。</li>
+</ul>
+<h3 id="_3">命令行参数</h3>
+<p><code>main</code> 由 Java 解释器调用，<code>args</code> 就是<strong>命令行参数</strong>。例如：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ArgsDemo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">);</span><span class="w">   </span><span class="c1">// 打印第 0 个命令行参数</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>java<span class="w"> </span>ArgsDemo<span class="w"> </span>these<span class="w"> </span>are<span class="w"> </span><span class="nb">command</span><span class="w"> </span>line<span class="w"> </span>arguments
+these
+</code></pre></div>
+
+<p><code>args</code> 是一个字符串数组 <code>{"these", "are", "command", "line", "arguments"}</code>。</p>
+<hr />
+<h2 id="_4">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义</strong>（1.2 Objects）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap1/chap12.html">https://joshhug.gitbooks.io/hug61b/content/chap1/chap12.html</a></li>
+<li><strong>DogLauncher 视频</strong>：<a href="https://www.youtube.com/watch?v=Q-LE-jJQLTM">https://www.youtube.com/watch?v=Q-LE-jJQLTM</a></li>
+<li><strong>练习 1.2.2 视频</strong>：<a href="https://youtu.be/8Gq-8mVbyFU">https://youtu.be/8Gq-8mVbyFU</a>（解答：<a href="https://youtu.be/Osuy8UEH03M">https://youtu.be/Osuy8UEH03M</a>）</li>
+<li><strong>HW0</strong>（建议先做）：<a href="http://sp19.datastructur.es/materials/hw/hw0/hw0.html">http://sp19.datastructur.es/materials/hw/hw0/hw0.html</a></li>
+<li><strong>Project 0</strong>：<a href="http://sp19.datastructur.es/materials/proj/proj0/proj0">http://sp19.datastructur.es/materials/proj/proj0/proj0</a></li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中示意图来自官方讲义原图，演示截图来自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>

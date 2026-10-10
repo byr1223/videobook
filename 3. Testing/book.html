@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 3 讲：测试与选择排序（Testing）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-3-testing">CS61B 第 3 讲：测试与选择排序（Testing）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p2 3_Testing</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap3/chap31.html">Hug61B · 3.1 A New Way</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；示意图为官方讲义原图，演示截图取自原视频。</p>
+</blockquote>
+<p>中高级程序员最重要的技能之一，是<strong>判断自己的代码是否正确</strong>。这一讲我们学习如何自己写测试，并借机实现一个排序算法——<strong>选择排序（Selection Sort）</strong>。</p>
+<hr />
+<h2 id="_1">一、一种新思路：先写测试，再写代码</h2>
+<p>课堂里，你靠自动评分器（autograder）获得信心；但现实中，测试要<strong>你自己写</strong>。本讲目标：写一个 <code>Sort</code> 类，提供 <code>sort(String[] x)</code> 方法，就地（破坏性地）排序字符串数组。</p>
+<p>全新的思路是：<strong>先写 <code>testSort()</code>，之后才动手写真正的排序代码</strong>——测试先于实现。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_03_25.png" alt="先写测试，再写实现" loading="lazy">
+  <p class="video-caption">📷 先写测试，再写实现<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=205" target="_blank" rel="noopener">回到原视频 (00:03:25)</a></p>
+</div>
+
+<hr />
+<h2 id="ad-hoc">二、Ad Hoc 测试（临时测试）</h2>
+<p>最简单直接的测试：造一个输入、调用 <code>sort</code>、检查输出对不对，错了就打印第一个不匹配的位置并终止：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">TestSort</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">testSort</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="s">"have"</span><span class="p">,</span><span class="w"> </span><span class="s">"an"</span><span class="p">,</span><span class="w"> </span><span class="s">"egg"</span><span class="p">};</span>
+<span class="w">        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"an"</span><span class="p">,</span><span class="w"> </span><span class="s">"egg"</span><span class="p">,</span><span class="w"> </span><span class="s">"have"</span><span class="p">,</span><span class="w"> </span><span class="s">"i"</span><span class="p">};</span>
+<span class="w">        </span><span class="n">Sort</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">input</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">expected</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Mismatch in position "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span>
+<span class="w">                    </span><span class="o">+</span><span class="w"> </span><span class="s">", expected: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">expected</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">", but got: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">input</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"."</span><span class="p">);</span>
+<span class="w">                </span><span class="k">break</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>配合一个"啥也不做"的 <code>Sort.sort</code>，运行会得到：</p>
+<div class="highlight"><pre><span></span><code>Mismatch in position 0, expected: an, but got: i.
+</code></pre></div>
+
+<p><strong>能报错是好事</strong>——说明测试在工作。你等于给自己造了一个"小游戏"：目标是改代码，让错误消失。很多人对"让测试通过"这件事几乎上瘾。</p>
+<blockquote>
+<p><strong>重要</strong>：为什么不用 <code>input == expected</code> 直接比数组？因为 <code>==</code> 比较的是<strong>内存盒子里的比特</strong>（即地址），而不是数组里的值。所以要用循环逐项比（或用内置的 <code>java.util.Arrays.equals</code>）。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_26.png" alt="Ad Hoc 测试" loading="lazy">
+  <p class="video-caption">📷 Ad Hoc 测试<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=266" target="_blank" rel="noopener">回到原视频 (00:04:26)</a></p>
+</div>
+
+<hr />
+<h2 id="junit">三、JUnit 测试</h2>
+<p>手写一堆循环和 print 很繁琐。<code>org.junit</code> 库能省掉大量工作：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">testSort</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="s">"have"</span><span class="p">,</span><span class="w"> </span><span class="s">"an"</span><span class="p">,</span><span class="w"> </span><span class="s">"egg"</span><span class="p">};</span>
+<span class="w">    </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"an"</span><span class="p">,</span><span class="w"> </span><span class="s">"egg"</span><span class="p">,</span><span class="w"> </span><span class="s">"have"</span><span class="p">,</span><span class="w"> </span><span class="s">"i"</span><span class="p">};</span>
+<span class="w">    </span><span class="n">Sort</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+<span class="w">    </span><span class="n">org</span><span class="p">.</span><span class="na">junit</span><span class="p">.</span><span class="na">Assert</span><span class="p">.</span><span class="na">assertArrayEquals</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>一行断言搞定，出错时会告诉我们第一个不同的位置。配合"啥也不做"的 <code>Sort.sort</code>，会得到：</p>
+<div class="highlight"><pre><span></span><code>arrays first differed at element [0]; expected:&lt;[an]&gt; but was:&lt;[i]&gt;
+</code></pre></div>
+
+<p>虽然输出比 ad hoc 测试难看一点，但写起来简单得多（本章末尾会讲如何让它更好看）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_13_40.png" alt="JUnit 测试" loading="lazy">
+  <p class="video-caption">📷 JUnit 测试<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=820" target="_blank" rel="noopener">回到原视频 (00:13:40)</a></p>
+</div>
+
+<hr />
+<h2 id="selection-sort">四、选择排序（Selection Sort）</h2>
+<p>最简单的排序算法之一，三步：</p>
+<ol>
+<li><strong>找到最小的项</strong>；</li>
+<li><strong>把它移到最前面</strong>；</li>
+<li>对剩下的 N-1 项<strong>递归地选择排序</strong>（不再碰最前面的项）。</li>
+</ol>
+<p>以 <code>{6, 3, 7, 2, 8, 1}</code> 为例：最小的 <code>1</code> 与最前的 <code>6</code> <strong>交换</strong>，得 <code>{1, 3, 7, 2, 8, 6}</code>；再在剩下部分找最小 <code>2</code>，与 <code>3</code> 交换，得 <code>{1, 2, 7, 3, 8, 6}</code>……依次得到 <code>{1,2,3,7,8,6}</code> → <code>{1,2,3,6,8,7}</code> → <code>{1,2,3,6,7,8}</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_28.png" alt="选择排序的交换过程" loading="lazy">
+  <p class="video-caption">📷 选择排序的交换过程<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=868" target="_blank" rel="noopener">回到原视频 (00:14:28)</a></p>
+</div>
+
+<blockquote>
+<p><strong>编者说明</strong>：把最小项移到前面有两种方式——"插入并整体后移"（低效）和"直接交换"（高效）。选择排序用的是后者。</p>
+</blockquote>
+<p>对应到代码，先写几个注释当"路线图"：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Sort</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="cm">/** Sorts strings destructively. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">sort</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// find the smallest item</span>
+<span class="w">        </span><span class="c1">// move it to the front</span>
+<span class="w">        </span><span class="c1">// selection sort the rest (using recursion?)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="findsmallest">五、findSmallest：找最小项</h2>
+<p>先写 <code>findSmallest</code> 的测试（照例，测试先于实现）：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">testFindSmallest</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="s">"have"</span><span class="p">,</span><span class="w"> </span><span class="s">"an"</span><span class="p">,</span><span class="w"> </span><span class="s">"egg"</span><span class="p">};</span>
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"an"</span><span class="p">;</span>
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sort</span><span class="p">.</span><span class="na">findSmallest</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+<span class="w">    </span><span class="n">org</span><span class="p">.</span><span class="na">junit</span><span class="p">.</span><span class="na">Assert</span><span class="p">.</span><span class="na">assertEquals</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>真正实现时有个坑：字符串不能像数字那样用 <code>&lt;</code> 比较。新手可能写出 <code>if (x[i] &lt; smallest)</code>，这会导致编译错误。正确做法是用 <code>compareTo</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">findSmallest</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">smallest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">cmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">compareTo</span><span class="p">(</span><span class="n">smallest</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cmp</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">          </span><span class="c1">// x[i] 字典序更小</span>
+<span class="w">            </span><span class="n">smallest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">smallest</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><code>compareTo</code> 返回负数表示"更小"、0 表示相等、正数表示"更大"。注意 Josh 在讲义里用了 <code>@source</code> 标注注明"字符串比较参考了某链接"——这是给正式选课学生的引用规范。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_00.png" alt="findSmallest 与 compareTo" loading="lazy">
+  <p class="video-caption">📷 findSmallest 与 compareTo<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=1020" target="_blank" rel="noopener">回到原视频 (00:17:00)</a></p>
+</div>
+
+<hr />
+<h2 id="swap">六、swap：交换两个元素</h2>
+<p>下一步是"交换"操作，同样先写测试再实现：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">swap</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">a</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="n">x</span><span class="o">[</span><span class="n">a</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">b</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="n">x</span><span class="o">[</span><span class="n">b</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>用临时变量 <code>temp</code> 中转，这是交换两个变量的经典三步。（Josh 在课上先写了个带 bug 的版本——把 <code>swap</code> 参数错写成了字符串而非索引——测试立刻暴露了问题，这正是"测试先行"的价值。）</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_25_08.png" alt="swap 的实现与测试" loading="lazy">
+  <p class="video-caption">📷 swap 的实现与测试<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=1508" target="_blank" rel="noopener">回到原视频 (00:25:08)</a></p>
+</div>
+
+<hr />
+<h2 id="_2">七、递归地排序剩余部分</h2>
+<p>把 <code>findSmallest</code> + <code>swap</code> + 递归组合起来，就得到完整的选择排序：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">sort</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">sort</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">          </span><span class="c1">// 从下标 0 开始排</span>
+<span class="p">}</span>
+
+<span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">sort</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w">                        </span><span class="c1">// 基本情况：排完了</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">smallestIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findSmallestIndex</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">);</span><span class="w">  </span><span class="c1">// 在 [start, ...] 里找最小</span>
+<span class="w">    </span><span class="n">swap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">smallestIndex</span><span class="p">);</span><span class="w">                    </span><span class="c1">// 换到最前</span>
+<span class="w">    </span><span class="n">sort</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w">                               </span><span class="c1">// 递归排剩下的</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ul>
+<li><strong>基本情况</strong>：<code>start == x.length</code>，没有可排的了；</li>
+<li><strong>递归情况</strong>：把 <code>[start, ...]</code> 里的最小项换到 <code>start</code> 位置，再递归排 <code>start+1</code> 之后的部分。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_16_56.png" alt="递归排序剩余部分" loading="lazy">
+  <p class="video-caption">📷 递归排序剩余部分<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=3&t=1016" target="_blank" rel="noopener">回到原视频 (00:16:56)</a></p>
+</div>
+
+<hr />
+<h2 id="_3">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义</strong>（3.1 A New Way）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap3/chap31.html">https://joshhug.gitbooks.io/hug61b/content/chap3/chap31.html</a></li>
+<li><strong>字符串比较参考</strong>（compareTo）：<a href="https://goo.gl/a7yBU5">https://goo.gl/a7yBU5</a></li>
+<li><strong>JUnit 官方文档</strong>：<a href="https://junit.org/junit4/">https://junit.org/junit4/</a></li>
+<li><strong><code>java.util.Arrays.equals</code></strong>：Oracle 官方文档</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中示意图来自官方讲义原图，演示截图取自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>

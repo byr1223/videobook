@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 6 讲：双向链表与数组（DLLists, Arrays）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-6-dllists-arrays">CS61B 第 6 讲：双向链表与数组（DLLists, Arrays）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p05 6_DLLists, Arrays</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap23.html">Hug61B · 2.3 The DLList</a> 与 <a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap24.html">2.4 Arrays</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；文中示意图为官方讲义原图，演示过程图截取自视频。</p>
+</blockquote>
+<p>本讲分两部分：先完成链表的最后两次改进（把单向链表 <code>SLList</code> 升级为双向链表 <code>DLList</code>，并引入泛型），再学习数组的基础知识——这是下一讲构建基于数组的列表 <code>AList</code> 的铺垫。</p>
+<hr />
+<h2 id="sllist-dllist">第一部分：从 SLList 到 DLList</h2>
+<h3 id="addlast">一、addLast 太慢了</h3>
+<p>上一讲的 <code>addLast</code> 是这样的：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addLast</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="n">IntNode</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sentinel</span><span class="p">;</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="na">next</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="na">next</span><span class="p">;</span><span class="w">   </span><span class="c1">// 从头走到尾</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="na">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntNode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>它的瓶颈和当年 <code>size</code> 一样：<strong>每次都要遍历整个列表</strong>。既然我们当年靠"缓存 <code>size</code>"解决了 <code>size</code>，自然会想到：<strong>加一个 <code>last</code> 指针缓存尾部</strong>。</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">SLList</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">sentinel</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">last</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addLast</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">last</span><span class="p">.</span><span class="na">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntNode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="w">        </span><span class="n">last</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">last</span><span class="p">.</span><span class="na">next</span><span class="p">;</span>
+<span class="w">        </span><span class="n">size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><img alt="带 last 指针的 SLList" src="images/sllist_last_pointer.png" /></p>
+<p>加了 <code>last</code> 后，<code>addLast</code> 和 <code>getLast</code> 都变快了，但 <strong><code>removeLast</code> 仍然慢</strong>。</p>
+<h3 id="removelast">二、removeLast 的难题</h3>
+<p>要删除最后一个节点，必须先把<strong>倒数第二个节点</strong>的 <code>next</code> 设为 <code>null</code>，再让 <code>last</code> 指向它。问题是：<strong>单向链表里，从 <code>last</code> 无法反向找到前驱</strong>，只能从头再遍历一遍。</p>
+<p>那再加一个 <code>secondToLast</code> 指针？——没用，因为删完它之后，你又需要"倒数第三"来更新它……如此无穷倒退（用归纳法一步步推就知道，靠"多缓存一个指针"这条路走不通）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_31.png" alt="双向链表：每个节点有 prev 和 next" loading="lazy">
+  <p class="video-caption">📷 双向链表：每个节点有 prev 和 next<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=271" target="_blank" rel="noopener">回到原视频 (00:04:31)</a></p>
+</div>
+
+<h3 id="_1">三、改进七：回头看（双向链表）</h3>
+<p>最自然的解法是<strong>让每个节点多一个指向前驱的 <code>prev</code> 指针</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">IntNode</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">prev</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">item</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">next</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>每个节点有两个链接，这种结构叫<strong>双向链表（Doubly Linked List）</strong>，简称 <code>DLList</code>；相对的，上一讲只有 <code>next</code> 的链表叫<strong>单向链表（Singly Linked List）</strong>，简称 <code>SLList</code>——上一讲那个"别扭的名字 <code>SLList</code>"之谜就此揭晓：<code>S</code> = Singly。</p>
+<p>空列表与含两项的 <code>DLList</code> 长这样：</p>
+<p><img alt="DLList 基本结构（大小 0）" src="images/dllist_basic_size_0.png" /></p>
+<p><img alt="DLList 基本结构（大小 2）" src="images/dllist_basic_size_2.png" /></p>
+<p>加上 <code>prev</code> 之后，在链表<strong>两端</strong>做添加、获取、删除都能在常数时间完成；只有"中间"操作仍需遍历。这正是现实世界链表通常采用的形态。（实现细节留到 Project 1 自己动手。）</p>
+<h3 id="vs">四、改进八：哨兵升级（双哨兵 vs 循环哨兵）</h3>
+<p>双向链表有个隐蔽的坑：<code>last</code> 指针<strong>有时指向哨兵节点、有时指向真实节点</strong>——于是每个方法都要写一堆 <code>if</code> 判断特殊情况，代码又丑又容易错。</p>
+<p><strong>方案 A：双哨兵</strong>。在链表前后各放一个哨兵，元素永远插在两个哨兵之间：</p>
+<p><img alt="双哨兵（大小 0）" src="images/dllist_double_sentinel_size_0.png" /></p>
+<p><img alt="双哨兵（大小 2）" src="images/dllist_double_sentinel_size_2.png" /></p>
+<p><strong>方案 B：循环哨兵</strong>。只用一个哨兵，让它<strong>既当开头又当结尾</strong>——空列表时 <code>sentinel.next == sentinel.prev == sentinel</code>；加元素后，从哨兵出发沿 <code>next</code> 一直走，最终回到哨兵自己。</p>
+<p><img alt="循环哨兵（大小 0）" src="images/dllist_circular_sentinel_size_0.png" /></p>
+<p><img alt="循环哨兵（大小 2）" src="images/dllist_circular_sentinel_size_2.png" /></p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_09.png" alt="循环哨兵结构" loading="lazy">
+  <p class="video-caption">📷 循环哨兵结构<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=429" target="_blank" rel="noopener">回到原视频 (00:07:09)</a></p>
+</div>
+
+<p>两种都能消除特殊情况。Josh 用"山顶寺庙的和尚"作比喻，推荐<strong>循环哨兵</strong>——它"世界是圆的，一直朝一个方向走会回到起点"，虽然初看更费解，但更纯粹、更美。做 Project 1 时他强烈建议采用。</p>
+<h3 id="_2">五、泛型：让列表能装任意类型</h3>
+<p><code>DLList</code> 有个致命局限：<strong>只能存 <code>int</code></strong>。想存 <code>String</code> 会直接报"String 无法转换为 int"。最糟的解法是复制一个 <code>StringSLList</code> 类到处查找替换——显然不可取。</p>
+<p>现代 Java 的正确做法是<strong>泛型（generics，2004 年加入）</strong>：在类名后加尖括号占位符 <code>&lt;BleepBlorp&gt;</code>（名字随意，<code>GloopGlop</code>、<code>Horse</code> 都行），把 <code>item</code> 的类型换成它：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DLList</span><span class="o">&lt;</span><span class="n">BleepBlorp</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">IntNode</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">prev</span><span class="p">;</span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">BleepBlorp</span><span class="w"> </span><span class="n">item</span><span class="p">;</span><span class="w">   </span><span class="c1">// 占位符 = 未来才决定的类型</span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="n">IntNode</span><span class="w"> </span><span class="n">next</span><span class="p">;</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>使用时，声明时指定具体类型，实例化时用空尖括号 <code>&lt;&gt;</code>（菱形运算符）：</p>
+<div class="highlight"><pre><span></span><code><span class="n">DLList</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DLList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="s">"hello"</span><span class="p">);</span>
+<span class="n">d2</span><span class="p">.</span><span class="na">addLast</span><span class="p">(</span><span class="s">"world"</span><span class="p">);</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_58.png" alt="泛型的声明与使用" loading="lazy">
+  <p class="video-caption">📷 泛型的声明与使用<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=658" target="_blank" rel="noopener">回到原视频 (00:10:58)</a></p>
+</div>
+
+<p>关键规则（Project 1 够用）：</p>
+<ul>
+<li>在<strong>实现</strong>数据结构的 <code>.java</code> 文件里，泛型类型名只在类名后声明<strong>一次</strong>；</li>
+<li>在<strong>使用</strong>数据结构的 <code>.java</code> 文件里，声明时指定具体类型，实例化时用空的 <code>&lt;&gt;</code>；</li>
+<li>泛型只接受<strong>引用类型</strong>，基本类型要换成包装类：<code>int→Integer</code>、<code>double→Double</code>、<code>char→Character</code> 等（且首字母大写）。</li>
+</ul>
+<p>例如：</p>
+<div class="highlight"><pre><span></span><code><span class="n">DLList</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DLList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+<span class="n">d1</span><span class="p">.</span><span class="na">insertFront</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+</code></pre></div>
+
+<p>到这一步，你就具备了实现 Project 1 <code>LinkedListDeque</code> 所需的全部知识。</p>
+<hr />
+<h2 id="_3">第二部分：数组基础</h2>
+<h3 id="_4">六、数组是什么</h3>
+<p>我们已能用递归类定义构建可无限增长的列表（<code>IntList</code>、<code>SLList</code>、<code>DLList</code>）。现在换一条<strong>正交的思路</strong>：用数组来存储信息。</p>
+<p>要构建列表，先要能拿到"内存盒子"。之前有两种途径：</p>
+<ul>
+<li><code>int x;</code> → 32 位的盒子；</li>
+<li><code>Walrus w2 = new Walrus(30, 5.6);</code> → 共 3 个盒子（引用 64 位 + 重量 32 位 + 獠牙 64 位）。</li>
+</ul>
+<p><strong>数组（array）</strong> 是第三种：一个<strong>带编号的内存盒子序列</strong>。类是有<strong>名字</strong>的盒子集合（用 <code>.</code> 访问），数组是有<strong>编号</strong>的盒子序列（用 <code>[]</code> 访问，如 <code>A[3]</code>）。数组的要素：</p>
+<ul>
+<li>一个固定的长度 <code>N</code>；</li>
+<li><code>N</code> 个<strong>同类型</strong>盒子，编号 <code>0</code> 到 <code>N-1</code>；</li>
+<li>不像类，数组<strong>没有方法</strong>。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_16_52.png" alt="数组：带编号的内存盒子序列" loading="lazy">
+  <p class="video-caption">📷 数组：带编号的内存盒子序列<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=1012" target="_blank" rel="noopener">回到原视频 (00:16:52)</a></p>
+</div>
+
+<h3 id="_5">七、三种数组创建记法</h3>
+<div class="highlight"><pre><span></span><code><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">3</span><span class="o">]</span><span class="p">;</span><span class="w">                        </span><span class="c1">// ① 指定长度，元素填默认值 0</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">};</span><span class="w">          </span><span class="c1">// ② 指定值，长度自动推断</span>
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">13</span><span class="p">};</span><span class="w">         </span><span class="c1">// ③ 省略 new，只能随声明一起用</span>
+</code></pre></div>
+
+<p>三种等价，无优劣之分。① 会得到长度 3、全 0 的数组；②③ 得到长度 5、含指定值的数组。创建数组时元素总会得到<strong>默认值</strong>（int 为 0，引用类型为 <code>null</code>）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_18_59.png" alt="三种数组创建记法" loading="lazy">
+  <p class="video-caption">📷 三种数组创建记法<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=1139" target="_blank" rel="noopener">回到原视频 (00:18:59)</a></p>
+</div>
+
+<h3 id="systemarraycopy">八、数组访问、修改与 System.arraycopy</h3>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">};</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w">                          </span><span class="c1">// 复制引用：x、y 指向同一数组</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">};</span><span class="w"> </span><span class="c1">// x 换指向，原数组只剩 y 引用</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">3</span><span class="o">]</span><span class="p">;</span><span class="w">                 </span><span class="c1">// 新数组全 0</span>
+<span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">;</span><span class="w">                 </span><span class="c1">// 长度 0 的数组</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">xL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w">              </span><span class="c1">// 5</span>
+
+<span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[</span><span class="mi">6</span><span class="o">]</span><span class="p">;</span><span class="w">     </span><span class="c1">// 6 个 64 位盒子，默认 null</span>
+<span class="n">s</span><span class="o">[</span><span class="mi">4</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"ketchup"</span><span class="p">;</span>
+<span class="n">s</span><span class="o">[</span><span class="n">x</span><span class="o">[</span><span class="mi">3</span><span class="o">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="mi">1</span><span class="o">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"muffins"</span><span class="p">;</span><span class="w">     </span><span class="c1">// x[3]-x[1] = 4-2 = 2，即 s[2]</span>
+
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">11</span><span class="p">};</span>
+<span class="n">System</span><span class="p">.</span><span class="na">arraycopy</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="c1">// 从 b[0] 起复制 2 个到 x[3] 起</span>
+</code></pre></div>
+
+<p><code>System.arraycopy</code> 的五个参数依次是：<strong>源数组、源起始下标、目标数组、目标起始下标、复制个数</strong>。对 Python 老手来说，<code>System.arraycopy(b, 0, x, 3, 2)</code> 等价于 <code>x[3:5] = b[0:2]</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_27_06.png" alt="System.arraycopy 演示" loading="lazy">
+  <p class="video-caption">📷 System.arraycopy 演示<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=1626" target="_blank" rel="noopener">回到原视频 (00:27:06)</a></p>
+</div>
+
+<p><strong>为什么要复制数组？</strong> 因为 <code>y = x</code> 只是复制<strong>引用</strong>，两个变量指向同一个数组。若要写一个"非破坏性"的函数（比如把每个元素平方、但不改原数组），就必须真正复制一份。两种复制方式：</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// 方式一：手写循环逐项复制</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">y</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span>
+
+<span class="c1">// 方式二：System.arraycopy（通常更快、代码更紧凑，但参数需记忆）</span>
+<span class="n">System</span><span class="p">.</span><span class="na">arraycopy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">);</span>
+</code></pre></div>
+
+<p><code>arraycopy</code> 通常比循环快（Java 解释器更贴近硬件），代码也更紧凑；代价是可读性略差，取舍由你。</p>
+<blockquote>
+<p><strong>边界检查</strong>：Java 数组只在<strong>运行时</strong>做边界检查——下面这段能编译通过，但运行时会崩溃（<code>ArrayIndexOutOfBoundsException</code>）：</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">13</span><span class="p">};</span>
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">y</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c1">// y[2] 越界！</span>
+</code></pre></div>
+
+<h3 id="_6">九、二维数组：引用的引用</h3>
+<p>Java 里所谓的"二维数组"其实是<strong>数组的数组</strong>。<code>int[][] bamboozle = new int[4][]</code> 创建的是 4 个盒子，每个盒子都能指向一个 <code>int[]</code>（长度未定）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_30_06.png" alt="二维数组：数组引用的数组" loading="lazy">
+  <p class="video-caption">📷 二维数组：数组引用的数组<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=6&t=1806" target="_blank" rel="noopener">回到原视频 (00:30:06)</a></p>
+</div>
+
+<p>用帕斯卡三角举例：</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="o">[][]</span><span class="w"> </span><span class="n">pascalsTriangle</span><span class="p">;</span>
+<span class="n">pascalsTriangle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">4</span><span class="o">][]</span><span class="p">;</span><span class="w">            </span><span class="c1">// 4 个引用盒子，默认 null</span>
+<span class="n">pascalsTriangle</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">};</span>
+<span class="n">pascalsTriangle</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">};</span>
+<span class="n">pascalsTriangle</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">};</span>
+<span class="n">pascalsTriangle</span><span class="o">[</span><span class="mi">3</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">};</span>
+
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">rowTwo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pascalsTriangle</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">;</span><span class="w">         </span><span class="c1">// 复制引用，指向同一行</span>
+<span class="n">rowTwo</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span><span class="p">;</span><span class="w">                            </span><span class="c1">// 会影响 pascalsTriangle[2][1]！</span>
+
+<span class="kt">int</span><span class="o">[][]</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="mi">4</span><span class="o">][</span><span class="mi">4</span><span class="o">]</span><span class="p">;</span><span class="w">            </span><span class="c1">// 第二种：直接创建 4×4 的矩形数组</span>
+<span class="kt">int</span><span class="o">[][]</span><span class="w"> </span><span class="n">pascalAgain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[][]</span><span class="p">{{</span><span class="mi">1</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}};</span><span class="w"> </span><span class="c1">// 字面量</span>
+</code></pre></div>
+
+<p>关键理解：<code>new int[4][]</code> 只创建 1 个数组（引用数组）；而 <code>new int[4][4]</code> 实际创建 <strong>5</strong> 个数组（1 个引用数组 + 4 个 int 数组）。<code>rowTwo</code> 和 <code>pascalsTriangle[2]</code> 是同一个数组的两个引用，改一个会影响另一个。</p>
+<h3 id="vs_1">十、数组 vs 类</h3>
+<p>两者都能组织一堆内存盒子，但哲学不同：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>类（如 Planet）</th>
+<th>数组</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>盒子命名</td>
+<td>有名字（<code>name</code>、<code>mass</code>）</td>
+<td>编号 <code>0..N-1</code></td>
+</tr>
+<tr>
+<td>访问方式</td>
+<td>点表示法 <code>p.mass</code></td>
+<td>方括号 <code>a[i]</code></td>
+</tr>
+<tr>
+<td>盒子类型</td>
+<td>可以不同</td>
+<td>必须相同</td>
+</tr>
+<tr>
+<td>数量</td>
+<td>固定</td>
+<td>固定（但长度是运行时值）</td>
+</tr>
+</tbody>
+</table>
+<p>最深刻的区别：<strong>数组的索引可以在运行时计算</strong>——用户输入几，就取 <code>a[几]</code>；而类的字段名是<strong>编译期写死</strong>的，你不能 <code>p[某个字符串]</code> 那样动态取字段（Java 里这会报错；想强行做只能靠"反射 API"，但那是公认的糟糕风格）。这个限制反而是 Java 的一大优点：它刻意收敛了你能做的选择，让大型程序的代码保持简单可预期。</p>
+<hr />
+<h2 id="_7">小结</h2>
+<p>本讲完成了链表的最终进化（<code>SLList</code> → 双向 <code>DLList</code> → 泛型化），并打好数组基础。下一讲，我们将用数组构建 <code>AList</code>，并比较它与 <code>SLList</code> 的优劣。</p>
+<hr />
+<h2 id="_8">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义一</strong>（The DLList）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap23.html">https://joshhug.gitbooks.io/hug61b/content/chap2/chap23.html</a></li>
+<li><strong>本讲讲义二</strong>（Arrays）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap24.html">https://joshhug.gitbooks.io/hug61b/content/chap2/chap24.html</a></li>
+<li><strong>Project 1（LinkedListDeque）</strong>：<a href="https://sp19.datastructur.es/materials/proj/proj1a/proj1a">https://sp19.datastructur.es/materials/proj/proj1a/proj1a</a></li>
+<li><strong>数组创建可视化</strong>：<a href="http://pythontutor.com/iframe-embed.html">http://pythontutor.com/iframe-embed.html</a></li>
+<li><strong>数组访问可视化</strong>：<a href="https://goo.gl/bertuh">https://goo.gl/bertuh</a></li>
+<li><strong>二维数组可视化</strong>：<a href="http://goo.gl/VS4cOK">http://goo.gl/VS4cOK</a></li>
+<li><strong>练习 2.4.1 可视化</strong>：<a href="http://goo.gl/fCZ9Dr">http://goo.gl/fCZ9Dr</a></li>
+<li><strong>Java 反射 API</strong>（仅作了解，不推荐用于取字段）：Oracle 官方文档</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中示意图来自官方讲义原图，演示过程截图来自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>

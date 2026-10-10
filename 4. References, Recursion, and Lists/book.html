@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS61B 第 4 讲：引用、递归与列表（References, Recursion, and Lists）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="cs61b-4-references-recursion-and-lists">CS61B 第 4 讲：引用、递归与列表（References, Recursion, and Lists）</h1>
+<blockquote>
+<p><strong>本电子书信息</strong>
+- 来源视频：<a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4">【数据结构与算法 CS61B 2021】伯克利大学—中英字幕 p04 p3 4_References, Recursion, and Lists</a>
+- 课程讲义：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap21.html">Hug61B · 2.1 Mystery of the Walrus</a>
+- 讲义版权：本课程全部材料由 <strong>Josh Hug</strong>（UC Berkeley CS61B）以 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布——可自由分享、演绎，但须署名 Josh Hug、以相同许可共享，且不得商用。
+- 本书由课堂录像字幕重构而成，术语以官方讲义为准；文中"盒子与指针"示意图为官方讲义原图，演示过程图截取自视频。</p>
+</blockquote>
+<p>本讲围绕一个看似简单的问题展开：<strong>为什么修改引用类型的对象会"牵一发而动全身"，而基本类型却互不影响？</strong> 沿着这条线索，Josh Hug 逐步引出内存模型、等号的黄金法则、引用类型、按值传递，并最终带领我们用递归与迭代从零实现一个链表 <code>IntList</code>。</p>
+<hr />
+<h2 id="the-mystery-of-the-walrus">一、开场：海象之谜（The Mystery of the Walrus）</h2>
+<p>本讲从一个谜题开始。它对理解"如何构建一个列表"至关重要——先不要急着往下看答案，试着凭直觉判断。</p>
+<h3 id="_1">谜题一：海象</h3>
+<div class="highlight"><pre><span></span><code><span class="n">Walrus</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Walrus</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mf">8.3</span><span class="p">);</span>
+<span class="n">Walrus</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+<span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+<span class="n">b</span><span class="p">.</span><span class="na">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>
+</code></pre></div>
+
+<p>问题：把 <code>b</code> 赋值为 <code>a</code> 之后，修改 <code>b.weight</code>，<strong>会不会影响 <code>a</code></strong>？</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_00_24.png" alt="海象之谜的代码" loading="lazy">
+  <p class="video-caption">📷 海象之谜的代码<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=24" target="_blank" rel="noopener">回到原视频 (00:00:24)</a></p>
+</div>
+
+<h3 id="_2">谜题二：整数</h3>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"x is: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"y is: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">);</span>
+</code></pre></div>
+
+<p>问题：修改 <code>x</code>，<strong>会不会影响 <code>y</code></strong>？</p>
+<h3 id="_3">答案</h3>
+<ul>
+<li><strong>海象之谜</strong>：答案是<strong>会</strong>。修改 <code>b.weight</code> 会同时改变 <code>a</code> 与 <code>b</code>——尽管 <code>a</code> 最初被设置为 1000。</li>
+<li><strong>整数之谜</strong>：答案是<strong>不会</strong>。<code>x = 2</code> 之后，<code>y</code> 仍然是 5。</li>
+</ul>
+<p>在可视化器里运行第一段代码可以直观看到：创建海象 <code>a</code> 之后，当执行 <code>b = a</code>，画面上出现<strong>两个箭头指向同一只海象</strong>。于是 <code>b.weight</code> 改变的是那唯一一只海象，打印出来两者自然相同。而整数的情况则不同：<code>x</code> 和 <code>y</code> 是<strong>两个完全不同的盒子</strong>，<code>x = 2</code> 只改写 <code>x</code> 所在的盒子，<code>y</code> 的盒子纹丝不动。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_02_07.png" alt="可视化器显示两个箭头指向同一只海象" loading="lazy">
+  <p class="video-caption">📷 可视化器显示两个箭头指向同一只海象<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=127" target="_blank" rel="noopener">回到原视频 (00:02:07)</a></p>
+</div>
+
+<p>这就是 Josh Hug 所称的<strong>海象之谜</strong>。要真正理解"为什么海象和整数的行为不同"，必须先了解计算机如何存储信息。</p>
+<hr />
+<h2 id="bits">二、内存与比特（Bits）</h2>
+<p>电脑里存储的任何信息——无论是原子的排列，还是某种神秘晶体——最终都以<strong>一串 0 和 1</strong> 编码。例如：</p>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>典型编码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数字 <code>72</code></td>
+<td><code>01001000</code></td>
+</tr>
+<tr>
+<td>数字 <code>205.75</code></td>
+<td><code>01000011 01001101 11000000 00000000</code></td>
+</tr>
+<tr>
+<td>字母 <code>H</code></td>
+<td><code>01001000</code>（与 72 相同！）</td>
+</tr>
+<tr>
+<td>布尔值 <code>true</code></td>
+<td><code>00000001</code></td>
+</tr>
+</tbody>
+</table>
+<p>本课程不会深究具体二进制表示（那是后续课程 CS61C 的内容），但值得注意一个耐人寻味的事实：<strong><code>72</code> 和字母 <code>H</code> 存储的都是 <code>01001000</code></strong>。那么一段 Java 代码如何知道该把这串比特解读成数字还是字母？</p>
+<p>答案是<strong>类型（type）</strong>。看这段代码：</p>
+<div class="highlight"><pre><span></span><code><span class="kt">char</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">'H'</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">c</span><span class="p">);</span><span class="w">  </span><span class="c1">// H</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">  </span><span class="c1">// 72</span>
+</code></pre></div>
+
+<p><code>c</code> 和 <code>x</code> 里存着几乎相同的比特，但 Java 解释器根据变量的类型对它们做不同解读：<code>char</code> 类型把它当作字母 <code>H</code>，<code>int</code> 类型把它当作数字 <code>72</code>。</p>
+<p>Java 共有 <strong>8 个基本类型（primitive types）</strong>：<code>byte</code>、<code>short</code>、<code>int</code>、<code>long</code>、<code>float</code>、<code>double</code>、<code>boolean</code>、<code>char</code>。其中 <code>short</code> 和 <code>float</code> 在本课程中基本用不到，其余几种会随着课程推进逐个讨论。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_05_24.png" alt="Java 的八个基本类型" loading="lazy">
+  <p class="video-caption">📷 Java 的八个基本类型<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=324" target="_blank" rel="noopener">回到原视频 (00:05:24)</a></p>
+</div>
+
+<hr />
+<h2 id="_4">三、变量声明与盒子记法</h2>
+<h3 id="_5">声明变量 = 分配一个"盒子"</h3>
+<p>可以把电脑想象成拥有海量内存比特，每个比特都有唯一地址。当你声明一个特定类型的变量时，Java 会找一块<strong>恰好够放该类型</strong>的连续比特。例如：</p>
+<ul>
+<li>声明 <code>int</code>，得到 32 比特；</li>
+<li>声明 <code>double</code>，得到 64 比特。</li>
+</ul>
+<p>为方便叙述，我们把这样一块内存称作一个<strong>"盒子"（box）</strong>。同时，Java 解释器会在内部维护一张表，把变量名映射到盒子的第一个比特的地址。执行下面两行：</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="kt">double</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+</code></pre></div>
+
+<p>就得到两个盒子（32 位与 64 位）：</p>
+<p><img alt="声明 int x 与 double y 得到的空盒子（比特视图）" src="images/x_and_y_empty_bitwise.png" /></p>
+<p>一个重要特性：<strong>Java 不会告诉你盒子的确切位置</strong>（你无法得知 <code>x</code> 在 352 号比特）。这是与 C 这类语言的关键区别——C 允许你直接索取某块数据的精确地址。Java 隐藏内存地址是一种权衡：少了控制权，也因此避开了大量极易出错的坑。正如 Donald Knuth 的名言："<strong>过早的优化是万恶之源</strong>。"（顺带一个贴切的类比：你无法直接控制自己的心跳——这限制了你对某些场景的优化，但也避免了"不小心把心跳关掉"这种蠢事。）</p>
+<p>另一个细节：声明变量时，Java <strong>不会</strong>往盒子里写入任何默认值。因此在你用 <code>=</code> 给盒子填上比特之前，编译器不允许使用该变量（打印 <code>x</code> 或 <code>y</code> 会报错）。</p>
+<p>而一旦赋值：</p>
+<div class="highlight"><pre><span></span><code><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1431195969</span><span class="p">;</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">567213.112</span><span class="p">;</span>
+</code></pre></div>
+
+<p>盒子就被填入对应数字的比特：</p>
+<p><img alt="赋值后的两个盒子（比特视图）" src="images/x_and_y_empty_filled.png" /></p>
+<h3 id="_6">简化盒子记法</h3>
+<p>直接用二进制写盒子内容虽然精确，却极难读。于是本课程引入<strong>简化盒子记法（simplified box notation）</strong>：盒子内容改用人类可读的符号写出，而不是二进制。上述赋值后，环境可表示为：</p>
+<p><img alt="简化盒子记法" src="images/x_and_y_simplified_box_notation.png" /></p>
+<p>这套记法与课程所用的 Java 可视化器保持一致，将在全课程中反复使用。</p>
+<hr />
+<h2 id="groe">四、等号的黄金法则（GRoE）</h2>
+<p>有了简化盒子记法，海象之谜终于可以被解开。谜底浓缩成一句话——<strong>等号的黄金法则（Golden Rule of Equals, GRoE）</strong>：</p>
+<blockquote>
+<p>当你写 <code>y = x</code> 时，你是在告诉 Java 解释器：<strong>把 <code>x</code> 盒子里的比特原样复制到 <code>y</code> 盒子里。</strong></p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_42.png" alt="等号的黄金法则" loading="lazy">
+  <p class="video-caption">📷 等号的黄金法则<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=582" target="_blank" rel="noopener">回到原视频 (00:09:42)</a></p>
+</div>
+
+<p>回到整数之谜：</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w">   </span><span class="c1">// 把 x 盒子里的比特（数字 5）复制到 y 盒子</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">   </span><span class="c1">// 把 x 盒子的内容改成数字 2，y 盒子不变</span>
+</code></pre></div>
+
+<ul>
+<li><code>int x = 5</code>：得到一个装数字 5 的盒子；</li>
+<li><code>int y</code>：得到另一个（暂未画内容的）盒子；</li>
+<li><code>y = x</code>：把 <code>x</code> 里的比特复制进 <code>y</code>；</li>
+<li><code>x = 2</code>：GRoE 说的是"把这个盒子填成 2"——只改 <code>x</code> 盒子，<code>y</code> 不受影响。</li>
+</ul>
+<p>这就是整数之谜的答案：<strong><code>x</code> 和 <code>y</code> 是两个独立盒子，赋值只是复制比特，并不建立任何"联动"。</strong></p>
+<p>这条法则对 Java 里<strong>任何</strong> <code>=</code> 赋值都成立，它也是后面理解一切引用行为、乃至所有数据结构效率的根基。</p>
+<hr />
+<h2 id="reference-types">五、引用类型（Reference Types）</h2>
+<p>前面提到 8 个基本类型。<strong>除此之外的一切——包括数组——都不是基本类型，而是引用类型（reference type）</strong>，如 <code>Planet</code>、<code>Walrus</code>、<code>Dog</code>。</p>
+<h3 id="new">对象实例化：<code>new</code> 做了什么</h3>
+<p>当我们用 <code>new</code> 实例化一个对象（如 <code>new Walrus(1000, 8.3)</code>）时，Java 会为类的每个实例变量分配盒子并填默认值，随后构造函数（通常）再把这些盒子填成其他值。以海象类为例：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Walrus</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">weight</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">tuskSize</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Walrus</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">ts</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">;</span>
+<span class="w">        </span><span class="n">tuskSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>执行 <code>new Walrus(1000, 8.3)</code> 会得到一个由两个盒子（32 位 + 64 位，共 96 位）组成的海象：上面的盒子装重量 <code>1000</code>，下面的盒子装獠牙大小 <code>8.3</code>。</p>
+<p><img alt="匿名海象：weight 与 tuskSize 两个盒子" src="images/anonymous_walrus.png" /></p>
+<blockquote>
+<p><strong>编者说明</strong>：真实 Java 实现里，对象还有额外的元数据开销（所以一只海象不止 96 位），这里忽略不计，不影响本课程的理解。</p>
+</blockquote>
+<p><code>new</code> 关键字最有趣的地方在于它的<strong>返回值</strong>。类比：你到田里埋下宝藏，光埋没用，还必须<strong>报告宝藏埋在哪里</strong>，否则再也没人能找回它。<code>new</code> 正是这样——它在内存里为海象找到家之后，会<strong>喊出这段内存的地址</strong>（一串比特），作为返回值。</p>
+<h3 id="64">引用变量的声明：64 位的"地址盒子"</h3>
+<p>声明任意引用类型变量（海象、狗、行星、数组……），Java 分配的盒子<strong>一律是 64 位</strong>，与对象类型无关。这乍看荒谬：一只海象要 96 位，怎么一个变量只有 64 位？</p>
+<p>谜底在于：<strong>这 64 位的盒子里装的不是海象的数据，而是海象在内存中的地址。</strong> 例如：</p>
+<div class="highlight"><pre><span></span><code><span class="n">Walrus</span><span class="w"> </span><span class="n">someWalrus</span><span class="p">;</span>
+<span class="n">someWalrus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Walrus</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mf">8.3</span><span class="p">);</span>
+</code></pre></div>
+
+<p>第一行创建 64 位盒子；第二行由 <code>new</code> 返回地址，按 GRoE 复制进 <code>someWalrus</code> 盒子。假设海象的 <code>weight</code> 从比特 <code>5051956592385990207</code> 开始存放，那么 <code>someWalrus</code> 盒子里存的就是这个 64 位地址：</p>
+<p><img alt="someWalrus 盒子存的是 64 位地址（比特视图）" src="images/someWalrus_bit_notation.png" /></p>
+<p>引用变量也可以赋特殊值 <code>null</code>，即全零：</p>
+<p><img alt="someWalrus = null（全零比特）" src="images/someWalrus_bit_notation_null.png" /></p>
+<h3 id="_7">盒子与指针表示法</h3>
+<p>和之前一样，直接看一串 64 位地址毫无教育意义，于是我们引入<strong>盒子与指针表示法（box and pointer notation）</strong>：</p>
+<ul>
+<li>地址为全零 → 写 <code>null</code>；</li>
+<li>非零地址 → 画一个<strong>箭头</strong>，指向它所指的对象实例。</li>
+</ul>
+<p>上面两例分别表示为：</p>
+<p><img alt="someWalrus 指向海象实例（盒子与指针）" src="images/someWalrus_simplified_bit_notation.png" /></p>
+<p><img alt="someWalrus = null（盒子与指针）" src="images/someWalrus_simplified_bit_notation_null.png" /></p>
+<blockquote>
+<p><strong>小结</strong>：本课程后续画图时，每个变量都是一个带标签的小盒子；基本类型的值直接写在盒子里（如 <code>5</code>、<code>3.0</code>），引用类型则画箭头指向对象。这套记法是理解所有数据结构的关键。</p>
+</blockquote>
+<hr />
+<h2 id="_8">六、解开海象之谜</h2>
+<p>现在终于可以完整、彻底地解开海象之谜。核心代码：</p>
+<div class="highlight"><pre><span></span><code><span class="n">Walrus</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Walrus</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mf">8.3</span><span class="p">);</span>
+<span class="n">Walrus</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+<span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>第一步</strong>，<code>a = new Walrus(1000, 8.3)</code>：<code>new</code> 找到 96 位内存存放海象并喊出地址，<code>a</code> 盒子记录这个地址（画成箭头）：</p>
+<p><img alt="步骤一：a 指向新海象" src="images/mystery_of_the_walrus_resolved_step1.png" /></p>
+<p><strong>第二步</strong>，<code>Walrus b</code>：创建一个 64 位盒子。此时 <code>b</code> <strong>未被定义</strong>——既不是 null，也不是任何值，只是"什么都没有"：</p>
+<p><img alt="步骤二：声明 b（未定义）" src="images/mystery_of_the_walrus_resolved_step2.png" /></p>
+<p><strong>第三步</strong>，<code>b = a</code>：按 GRoE，把 <code>a</code> 盒子里的 64 位比特<strong>原样复制</strong>到 <code>b</code> 盒子。用视觉隐喻说，就是把 <code>a</code> 里的箭头复制一份给 <code>b</code>：</p>
+<p><img alt="步骤三：b = a 后，两个箭头指向同一海象" src="images/mystery_of_the_walrus_resolved_step3.png" /></p>
+<p>仅此而已，没有任何更复杂的魔法。于是 <code>b.weight</code> 会"跟着箭头走"，找到与 <code>a</code> 相同的海象——这就是海象之谜的完整答案。</p>
+<hr />
+<h2 id="_9">七、参数传递：按值传递</h2>
+<p>GRoE 不仅适用于赋值，<strong>同样适用于函数传参</strong>——当你把参数传给函数时，本质仍然是复制比特。复制比特这件事通常被称为<strong>按值传递（pass by value）</strong>，而 Java <strong>永远按值传递</strong>。</p>
+<p>以平均值为例：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="nf">average</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">5.5</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10.5</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">avg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><code>main</code> 执行前两行后，得到两个盒子 <code>x = 5.5</code>、<code>y = 10.5</code>：</p>
+<p><img alt="main 中的 x 与 y 盒子" src="images/main_x_y.png" /></p>
+<p>调用 <code>average(x, y)</code> 时，<code>average</code> 函数拥有<strong>自己的作用域</strong>，里面有全新的 <code>a</code>、<code>b</code> 两个盒子，<code>x</code>、<code>y</code> 的比特被<strong>复制</strong>进去：</p>
+<p><img alt="average 作用域中的 a 与 b（复制的比特）" src="images/average_a_b.png" /></p>
+<p>如果 <code>average</code> 里修改 <code>a</code>，<code>main</code> 里的 <code>x</code> 完全不变——因为 GRoE 说，你只是在给 <code>a</code> 这个盒子填入新比特。<strong>没有任何反向箭头指回 <code>main</code>。</strong></p>
+<h3 id="dostuff">练习：doStuff</h3>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PassByValueFigure</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Walrus</span><span class="w"> </span><span class="n">walrus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Walrus</span><span class="p">(</span><span class="mi">3500</span><span class="p">,</span><span class="w"> </span><span class="mf">10.5</span><span class="p">);</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9</span><span class="p">;</span>
+<span class="w">        </span><span class="n">doStuff</span><span class="p">(</span><span class="n">walrus</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">walrus</span><span class="p">);</span><span class="w">  </span><span class="c1">// ?</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">       </span><span class="c1">// ?</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">doStuff</span><span class="p">(</span><span class="n">Walrus</span><span class="w"> </span><span class="n">W</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">W</span><span class="p">.</span><span class="na">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">W</span><span class="p">.</span><span class="na">weight</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>调用 <code>doStuff</code> 后，<code>walrus</code> 和 <code>x</code> 分别是什么？——只需 GRoE 一条规则即可求解。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_43.png" alt="doStuff 按值传递的可视化" loading="lazy">
+  <p class="video-caption">📷 doStuff 按值传递的可视化<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=1423" target="_blank" rel="noopener">回到原视频 (00:23:43)</a></p>
+</div>
+
+<p><strong>解答思路</strong>：<code>doStuff</code> 有自己的作用域，参数 <code>W</code> 和 <code>x</code> 是复制来的比特。<code>W</code> 盒子里复制的是<strong>海象的地址</strong>，所以 <code>W</code> 与 <code>walrus</code> 两个箭头指向同一只海象——<code>W.weight -= 100</code> 会把那只海象减重 100，<code>main</code> 里的 <code>walrus</code> 自然"变轻了"。而 <code>x</code> 盒子里复制的是<strong>数字 9 本身</strong>（不是 9 的地址），<code>x = x - 5</code> 只改 <code>doStuff</code> 里这个局部 <code>x</code>，不会回流到 <code>main</code>。所以最终：<code>walrus.weight == 3400</code>，而 <code>main</code> 里的 <code>x</code> 仍是 <code>9</code>。</p>
+<blockquote>
+<p>这里有一个极其微妙但重要的区别：<strong>引用参数复制的是"地址"，基本类型参数复制的是"值本身"。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_10">八、数组也是引用类型</h2>
+<p>数组同样是对象，和行星、海象、狗一样，通常用 <code>new</code> 实例化。把数组的声明、实例化、赋值拆开看：</p>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w">                          </span><span class="c1">// 声明：64 位盒子，只能存数组地址</span>
+<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">95</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">};</span><span class="w">    </span><span class="c1">// 实例化 + 赋值</span>
+</code></pre></div>
+
+<ul>
+<li><strong>声明</strong> <code>int[] a</code> 创建一个 64 位盒子，且编译器只允许往里面存数组地址，目前还没有实际对象；</li>
+<li><strong>实例化</strong> <code>new int[]{...}</code> 创建 5 个各 32 位的盒子，分别放入 <code>0、1、2、95、4</code>，<code>new</code> 返回这个数组对象的地址；</li>
+<li>若地址无人接收（"落在聋子的耳朵上"），对象创建后立刻不可用——所以我们通常三步合一完成赋值。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_26_44.png" alt="数组的实例化" loading="lazy">
+  <p class="video-caption">📷 数组的实例化<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=1604" target="_blank" rel="noopener">回到原视频 (00:26:44)</a></p>
+</div>
+
+<p><strong>对象可以被"丢失"</strong>：如果某个对象的地址只存在 <code>a</code> 一个盒子里，那么 <code>a = new int[]{...}</code> 或 <code>a = null</code> 之后，就再也没有任何地方保存那个旧对象的地址，它将永远无法被访问。这不是坏事——很快我们构建列表时，会主动希望丢弃对旧对象的引用，由垃圾回收器回收。</p>
+<hr />
+<h2 id="intlist">九、IntList：从零构建链表</h2>
+<p>至此，我们终于可以动手构建一个列表。列表与数组的核心区别是：<strong>列表可以任意增长</strong>，而 Java 数组大小固定。</p>
+<p>我们的列表类 <code>IntList</code> 只含两个成员：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">IntList</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">first</span><span class="p">;</span><span class="w">      </span><span class="c1">// 一个整数</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">IntList</span><span class="w"> </span><span class="n">rest</span><span class="p">;</span><span class="w">   </span><span class="c1">// 指向另一个列表的地址（指针）</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">IntList</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">IntList</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">;</span>
+<span class="w">        </span><span class="n">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ul>
+<li><code>first</code>：本节点存的整数；</li>
+<li><code>rest</code>：指向"剩余列表"的指针。若 <code>rest == null</code>，说明这是最后一个节点。</li>
+</ul>
+<p>用盒子与指针表示，一个 <code>5 → 10 → 15</code> 的链表长这样：</p>
+<div class="highlight"><pre><span></span><code>graph LR
+    L["L (IntList)"] --&gt; N1["first = 5"]
+    N1 -- rest --&gt; N2["first = 10"]
+    N2 -- rest --&gt; N3["first = 15&lt;br/&gt;rest = null"]
+</code></pre></div>
+
+<h3 id="_11">正向构建（啰嗦但直观）</h3>
+<div class="highlight"><pre><span></span><code><span class="n">IntList</span><span class="w"> </span><span class="n">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="n">L</span><span class="p">.</span><span class="na">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="n">L</span><span class="p">.</span><span class="na">rest</span><span class="p">.</span><span class="na">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+</code></pre></div>
+
+<p>逐步可视化可以看到：先有 <code>first=5, rest=null</code> 的列表 <code>L</code>；然后 <code>L.rest</code> 成为 <code>first=10, rest=null</code> 的新节点；最后 <code>L.rest.rest</code> 成为 <code>first=15, rest=null</code> 的节点。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_30_36.png" alt="IntList 正向构建过程" loading="lazy">
+  <p class="video-caption">📷 IntList 正向构建过程<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=1836" target="_blank" rel="noopener">回到原视频 (00:30:36)</a></p>
+</div>
+
+<h3 id="_12">反向构建（更简洁）</h3>
+<p>先加构造函数 <code>IntList(int f, IntList r)</code>，再从尾部往前搭：</p>
+<div class="highlight"><pre><span></span><code><span class="n">IntList</span><span class="w"> </span><span class="n">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="n">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">L</span><span class="p">);</span>
+<span class="n">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntList</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">L</span><span class="p">);</span>
+</code></pre></div>
+
+<p>每一步都"新建一个节点，把旧列表挂到它的 <code>rest</code> 上"，最终得到 <code>5 → 10 → 15</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_32_50.png" alt="反向构建列表" loading="lazy">
+  <p class="video-caption">📷 反向构建列表<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=1970" target="_blank" rel="noopener">回到原视频 (00:32:50)</a></p>
+</div>
+
+<p>到这里，<code>IntList</code> 在技术上已经能做列表所需的一切操作，但用起来相当别扭——比如取第 <code>i</code> 个元素、询问列表大小都让人抓狂。于是接下来为它添加辅助方法。</p>
+<hr />
+<h2 id="size-iterativesize">十、size 与 iterativeSize</h2>
+<p>我们要加一个 <code>size()</code> 方法：调用 <code>L.size()</code> 返回列表元素个数（类似 Python 的 <code>len</code>）。</p>
+<h3 id="size">递归版 size</h3>
+<p>递归方法必须有一个<strong>基本情况（base case）</strong>。这里最自然的基况是 <code>rest == null</code>——此时列表只有一个元素，返回 <code>1</code>：</p>
+<div class="highlight"><pre><span></span><code><span class="cm">/** 用递归返回列表大小 */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">size</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rest</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">rest</span><span class="p">.</span><span class="na">size</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ul>
+<li>若 <code>rest == null</code>，返回 <code>1</code>；</li>
+<li>否则，本节点贡献 <code>1</code>，再加上"剩余列表的大小"。</li>
+</ul>
+<blockquote>
+<p><strong>常见疑问</strong>：为什么不写 <code>if (this == null) return 0;</code>？因为 <code>size()</code> 是在某个对象上被调用的（如 <code>L.size()</code>）——若 <code>L</code> 本身是 <code>null</code>，这一步就会抛空指针异常，根本到不了方法体。</p>
+</blockquote>
+<p>在可视化器里逐步跟踪递归调用：<code>L</code> 先问自己的 <code>rest</code> 是否为 null——不是，于是"问朋友"<code>rest</code> 的大小再加一；一路问到最后一个节点，它回答"我的 <code>rest</code> 是 null，大小是 1"；返回值逐层回传 <code>1 → 2 → 3</code>。</p>
+<div class="highlight"><pre><span></span><code>graph TD
+    A["L.size()"] --&gt; B{"rest == null ?"}
+    B -- 否 --&gt; C["1 + L.rest.size()"]
+    C --&gt; D{"rest == null ?"}
+    D -- 否 --&gt; E["1 + L.rest.rest.size()"]
+    E --&gt; F{"rest == null ?"}
+    F -- 是 --&gt; G["返回 1"]
+    G --&gt; H["返回 1 + 1 = 2"]
+    H --&gt; I["返回 1 + 2 = 3"]
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_37_27.png" alt="递归 size 的可视化" loading="lazy">
+  <p class="video-caption">📷 递归 size 的可视化<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=2247" target="_blank" rel="noopener">回到原视频 (00:37:27)</a></p>
+</div>
+
+<h3 id="iterativesize">迭代版 iterativeSize</h3>
+<p>为了展示另一种模式，再写一个不用递归的版本。常见套路是引入一个指针变量 <code>p</code>，从 <code>this</code> 出发逐步前进：</p>
+<div class="highlight"><pre><span></span><code><span class="cm">/** 用迭代（无递归）返回列表大小 */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">iterativeSize</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">IntList</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">totalSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">totalSize</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="na">rest</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">totalSize</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><code>p</code> 这个名字提醒自己：它持有一个<strong>指针</strong>。之所以需要 <code>p</code>，是因为 Java 里不能给 <code>this</code> 重新赋值。循环每走一步计数加一、<code>p</code> 前进到下一个节点，直到 <code>p == null</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_40_14.png" alt="迭代 iterativeSize 的可视化" loading="lazy">
+  <p class="video-caption">📷 迭代 iterativeSize 的可视化<br><a href="https://www.bilibili.com/video/BV1FSzNYpE7s/?p=4&t=2414" target="_blank" rel="noopener">回到原视频 (00:40:14)</a></p>
+</div>
+
+<blockquote>
+<p><strong>编者说明</strong>：<code>iterativeSize</code> 里的 <code>while</code> 循环可以用 <code>if</code> 改写为递归，两者本质等价；视频中讲师采用的正是上述"指针前移"写法。</p>
+</blockquote>
+<hr />
+<h2 id="get">十一、get 方法</h2>
+<p>最后，添加 <code>get(int i)</code> 返回列表第 <code>i</code> 个元素（约定最前面的是第 0 项）。为了简单，假设调用者请求的索引确实存在（越界时崩溃也无妨）。</p>
+<p>对 <code>5 → 10 → 15</code>：<code>L.get(0)</code> 返回 <code>5</code>，<code>L.get(1)</code> 返回 <code>10</code>，<code>L.get(2)</code> 返回 <code>15</code>。</p>
+<p>用递归实现，基况是 <strong><code>i == 0</code></strong>——直接返回 <code>first</code>；否则把问题"甩"给 <code>rest</code>，询问它的第 <code>i - 1</code> 项：</p>
+<div class="highlight"><pre><span></span><code><span class="cm">/** 返回列表第 i 项（最前为第 0 项） */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">first</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">rest</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>思路是：<strong>我的第 <code>i</code> 项，就是我邻居（<code>rest</code>）的第 <code>i - 1</code> 项。</strong> 例如 <code>L.get(1)</code> 等于 <code>L.rest.get(0)</code>，而 <code>rest.get(0)</code> 直接返回 <code>10</code>。测试：<code>get(0)</code> 得 5、<code>get(1)</code> 得 10、<code>get(2)</code> 得 15，越界请求则崩溃——符合预期。</p>
+<p>注意，这样写出来的 <code>get</code> 是<strong>线性时间</strong>：若列表有 100 万个元素，取最后一项比短列表慢得多。后续课程会介绍能避免这个问题的列表实现（如 <code>SLList</code>、<code>AList</code>）。</p>
+<hr />
+<h2 id="_13">附：官方参考与延伸阅读</h2>
+<ul>
+<li><strong>本讲讲义</strong>（Mystery of the Walrus）：<a href="https://joshhug.gitbooks.io/hug61b/content/chap2/chap21.html">https://joshhug.gitbooks.io/hug61b/content/chap2/chap21.html</a></li>
+<li><strong>Java 可视化器</strong>（本讲演示全程使用的工具）：<a href="http://cscircles.cemc.uwaterloo.ca/java_visualize/">http://cscircles.cemc.uwaterloo.ca/java_visualize/</a></li>
+<li><strong>整数表示</strong>（二进制补码）：<a href="https://en.wikipedia.org/wiki/Two%27s_complement">https://en.wikipedia.org/wiki/Two%27s_complement</a></li>
+<li><strong>浮点表示</strong>（IEEE 754）：<a href="https://en.wikipedia.org/wiki/IEEE_floating_point">https://en.wikipedia.org/wiki/IEEE_floating_point</a></li>
+<li><strong>"过早优化是万恶之源"</strong>（Knuth）：<a href="http://www.informit.com/articles/article.aspx?p=2246428&amp;seqNum=5">http://www.informit.com/articles/article.aspx?p=2246428&amp;seqNum=5</a></li>
+<li><strong>内存隐藏避免的编程错误</strong>：<a href="http://www.informit.com/articles/article.aspx?p=2246428&amp;seqNum=1">http://www.informit.com/articles/article.aspx?p=2246428&amp;seqNum=1</a></li>
+<li><strong>The Law of the Broken Futon</strong>（关于"半懂不懂"的代价）：<a href="https://mathwithbaddrawings.com/2015/04/08/the-math-ceiling-wheres-your-cognitive-breaking-point/">https://mathwithbaddrawings.com/2015/04/08/the-math-ceiling-wheres-your-cognitive-breaking-point/</a></li>
+<li><strong>为什么不能在 Java 里重新给 this 赋值</strong>：<a href="https://stackoverflow.com/questions/23021377/reassign-this-in-java-class">https://stackoverflow.com/questions/23021377/reassign-this-in-java-class</a></li>
+<li><strong>本讲后续练习</strong>（未评分，<code>incrList</code> / <code>dinkList</code>）：见课程 lectureCode 仓库的 <code>lists</code> 练习目录。</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>版权与许可</strong>：本电子书中的课堂讲解内容重构自 Josh Hug（UC Berkeley）CS61B 课程录像；课程全部材料依据 <strong>Creative Commons 4.0 BY-NC-SA</strong> 许可发布。请在使用时署名 Josh Hug、以相同许可共享，且不得用于商业用途。书中的示意图（盒子与指针图）来自官方讲义原图，演示过程截图来自原视频，相应权利归原作者与视频权利人所有。</p>
+</blockquote>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
